@@ -1,16 +1,31 @@
-import os, uuid, sqlite3
-from flask import Flask, render_template, request, jsonify, g, Response, make_response, redirect, url_for, session
+import os, uuid, sqlite3, json
+from flask import Flask, render_template, request, jsonify, g, make_response, redirect, url_for, session
 
 DATABASE = os.environ.get("DATABASE_URL", "ratings.db")
 SECRET_KEY = os.environ.get("SECRET_KEY", "santa-secret-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Julian")
+DATA_FILE = os.environ.get("DATA_PATH", "bakers.json")
 
-# Participants
-ENTRANTS = ["Javier", "Lindsay", "Yesenia", "Bryan", "Daniella", "Rogelio", "Viviana", "Martha", "Bernie"]
+# Default Entrants
+DEFAULT_ENTRANTS = ["Javier", "Lindsay", "Yesenia", "Bryan", "Daniella", "Rogelio", "Viviana", "Martha", "Bernie"]
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = SECRET_KEY
 
+# --- Persistence for Baker Names ---
+def load_entrants():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                return json.load(f)
+        except: pass
+    return DEFAULT_ENTRANTS
+
+def save_entrants(names):
+    with open(DATA_FILE, 'w') as f:
+        json.dump(names, f)
+
+# --- Database ---
 def get_db():
     db = getattr(g, "_db", None)
     if db is None:
@@ -24,9 +39,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS ratings(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             entrant_index INTEGER NOT NULL,
-            taste INTEGER NOT NULL CHECK(taste BETWEEN 1 AND 5),
-            presentation INTEGER NOT NULL CHECK(presentation BETWEEN 1 AND 5),
-            spirit INTEGER NOT NULL CHECK(spirit BETWEEN 1 AND 5),
+            taste INTEGER NOT NULL,
+            presentation INTEGER NOT NULL,
+            spirit INTEGER NOT NULL,
             judge TEXT,
             device_id TEXT,
             one_word TEXT,
@@ -36,28 +51,21 @@ def init_db():
     """)
     db.commit()
 
-@app.teardown_appcontext
-def close_db(exception):
-    db = getattr(g, "_db", None)
-    if db is not None:
-        db.close()
-
 with app.app_context():
     init_db()
 
-def device_id_from_request():
-    return request.cookies.get("device_id") or "anon"
-
+# --- Routes ---
 @app.route("/")
 def home():
-    resp = make_response(render_template("index.html", entrants=ENTRANTS, title="2025 Holiday Baking Competition"))
+    entrants = load_entrants()
+    resp = make_response(render_template("index.html", entrants=entrants, title="2025 Holiday Baking"))
     if not request.cookies.get("device_id"):
-        resp.set_cookie("device_id", str(uuid.uuid4()), max_age=60*60*24*365, samesite="Lax")
+        resp.set_cookie("device_id", str(uuid.uuid4()), max_age=60*60*24*365)
     return resp
 
 @app.route("/words")
 def words_page():
-    return render_template("words.html", entrants=ENTRANTS, title="One Word Results")
+    return render_template("words.html", title="One Word Results")
 
 @app.route("/api/rate", methods=["POST"])
 def api_rate():
@@ -67,92 +75,91 @@ def api_rate():
         taste = int(data.get("taste"))
         presentation = int(data.get("presentation"))
         spirit = int(data.get("spirit"))
-        judge = (data.get("judge") or "").strip()[:50] or None
-        one_word = (data.get("one_word") or "").strip().split()[0][:20] if data.get("one_word") else None
-    except Exception:
-        return jsonify({"ok": False, "error": "Invalid payload"}), 400
+        judge = (data.get("judge") or "").strip()[:50]
+        one_word = (data.get("one_word") or "").strip().split()[0][:20]
+    except: return jsonify({"ok": False}), 400
 
-    if not (0 <= entrant_index < len(ENTRANTS)):
-        return jsonify({"ok": False, "error": "Invalid entrant"}), 400
+    entrants = load_entrants()
+    if not (0 <= entrant_index < len(entrants)): return jsonify({"ok": False}), 400
 
-    device_id = device_id_from_request()
     db = get_db()
     db.execute(
-        """
-        INSERT INTO ratings (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
+        """INSERT INTO ratings (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(entrant_index, device_id) DO UPDATE SET
-            taste=excluded.taste,
-            presentation=excluded.presentation,
-            spirit=excluded.spirit,
-            judge=excluded.judge,
-            one_word=excluded.one_word
+            taste=excluded.taste, presentation=excluded.presentation, spirit=excluded.spirit,
+            judge=excluded.judge, one_word=excluded.one_word
         """,
-        (entrant_index, taste, presentation, spirit, judge, device_id, one_word),
+        (entrant_index, taste, presentation, spirit, judge, request.cookies.get("device_id"), one_word)
     )
     db.commit()
     return jsonify({"ok": True})
 
-@app.route("/api/my-rating")
-def api_my_rating():
-    try: entrant_index = int(request.args.get("entrant_index", "-1"))
-    except: return jsonify({"ok": False}), 400
-    
-    if not (0 <= entrant_index < len(ENTRANTS)): return jsonify({"ok": True, "rating": None})
-
-    db = get_db()
-    row = db.execute("SELECT taste, presentation, spirit, judge, one_word FROM ratings WHERE entrant_index=? AND device_id=?", 
-                     (entrant_index, device_id_from_request())).fetchone()
-    return jsonify({"ok": True, "rating": dict(row) if row else None})
-
 @app.route("/api/leaderboard")
 def api_leaderboard():
+    entrants = load_entrants()
     db = get_db()
     rows = db.execute("""
-        SELECT entrant_index, COUNT(*) AS votes,
-               AVG(taste) AS avg_taste, AVG(presentation) AS avg_presentation, AVG(spirit) AS avg_spirit,
-               AVG(taste + presentation + spirit) AS avg_total
-        FROM ratings GROUP BY entrant_index ORDER BY avg_total DESC
+        SELECT entrant_index, COUNT(*) as votes,
+               AVG(taste) as t, AVG(presentation) as p, AVG(spirit) as s
+        FROM ratings GROUP BY entrant_index
     """).fetchall()
-    out = [{
-        "name": ENTRANTS[r["entrant_index"]],
-        "votes": r["votes"],
-        "avg_taste": round(r["avg_taste"] or 0, 1),
-        "avg_presentation": round(r["avg_presentation"] or 0, 1),
-        "avg_spirit": round(r["avg_spirit"] or 0, 1),
-        "avg_total": round(r["avg_total"] or 0, 2),
-    } for r in rows]
-    return jsonify(out)
+    
+    results = []
+    for r in rows:
+        idx = r["entrant_index"]
+        if idx < len(entrants):
+            avg_total = (r["t"] + r["p"] + r["s"]) / 3.0
+            results.append({
+                "name": entrants[idx],
+                "votes": r["votes"],
+                "avg_total": round(avg_total, 2)
+            })
+    
+    results.sort(key=lambda x: x["avg_total"], reverse=True)
+    return jsonify(results)
 
 @app.route("/api/words")
 def api_words():
+    entrants = load_entrants()
     db = get_db()
-    rows = db.execute("SELECT entrant_index, LOWER(TRIM(one_word)) AS w, COUNT(*) AS c FROM ratings WHERE one_word IS NOT NULL AND TRIM(one_word) != '' GROUP BY entrant_index, LOWER(TRIM(one_word)) ORDER BY c DESC").fetchall()
+    rows = db.execute("SELECT entrant_index, LOWER(one_word) as w, COUNT(*) as c FROM ratings WHERE one_word != '' GROUP BY entrant_index, LOWER(one_word) ORDER BY c DESC").fetchall()
     out = {}
     for r in rows:
-        out.setdefault(ENTRANTS[r["entrant_index"]], []).append({"word": r["w"], "count": r["c"]})
+        idx = r["entrant_index"]
+        if idx < len(entrants):
+            out.setdefault(entrants[idx], []).append({"word": r["w"], "count": r["c"]})
     return jsonify(out)
 
+# --- Admin ---
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     if request.method == "POST":
         if request.form.get("password") == ADMIN_PASSWORD:
             session["is_admin"] = True
             return redirect(url_for("admin"))
-        return render_template("admin_login.html", error="Incorrect password")
+        return render_template("admin_login.html", error="Incorrect Password")
+
     if not session.get("is_admin"):
         return render_template("admin_login.html")
 
+    entrants = load_entrants()
+    return render_template("admin_dashboard.html", entrants=entrants)
+
+@app.route("/admin/update_names", methods=["POST"])
+def update_names():
+    if not session.get("is_admin"): return redirect(url_for("admin"))
+    new_names = request.form.getlist("names")
+    save_entrants(new_names)
+    return redirect(url_for("admin"))
+
+@app.route("/admin/reset", methods=["POST"])
+def reset_game():
+    if not session.get("is_admin"): return redirect(url_for("admin"))
     db = get_db()
-    rows = db.execute("SELECT * FROM ratings ORDER BY created_at DESC").fetchall()
-    detailed = [{
-        "entrant": ENTRANTS[r["entrant_index"]],
-        "taste": r["taste"], "presentation": r["presentation"], "spirit": r["spirit"],
-        "total": r["taste"] + r["presentation"] + r["spirit"],
-        "judge": r["judge"], "one_word": r["one_word"]
-    } for r in rows]
-    
-    return render_template("admin_results.html", detailed=detailed, title="Admin Results")
+    db.execute("DELETE FROM ratings")
+    db.commit()
+    return redirect(url_for("admin"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

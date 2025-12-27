@@ -1,63 +1,83 @@
-{% extends "base.html" %}
-{% block content %}
-<section class="card">
-  <h2>🎅 Rate a Treat</h2>
-  <form id="rateForm">
-    <label>Select Baker</label>
-    <select id="entrant" required>
-      <option value="" disabled selected>Who baked this?</option>
-      {% for name in entrants %}<option value="{{ loop.index0 }}">{{ name }}</option>{% endfor %}
-    </select>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div>
 
-    <div class="slider-wrap">
-      <label>Taste 😋</label>
-      <input type="range" min="1" max="5" value="3" id="taste" oninput="syncEmoji()">
-      <div class="row"><span id="tasteEmoji">🙂</span><span id="tasteScore">3/5</span></div>
-    </div>
+  <div class="wrap">
+    <h1>🎅 2025 Baking Comp 🍪</h1>
+    
+    <section class="card">
+      <h2>Rate a Treat</h2>
+      <form id="rateForm">
+        <label>Baker & Dessert</label>
+        <select id="entrant" required>
+          <option value="" disabled selected>Select...</option>
+          {% for name in entrants %}
+          <option value="{{ loop.index0 }}">{{ name }}</option>
+          {% endfor %}
+        </select>
 
-    <div class="slider-wrap">
-      <label>Presentation 📸</label>
-      <input type="range" min="1" max="5" value="3" id="presentation" oninput="syncEmoji()">
-      <div class="row"><span id="presEmoji">🙂</span><span id="presScore">3/5</span></div>
-    </div>
+        <div class="slider-group">
+          <div id="santa-container"><div id="santa">🎅</div></div>
+          <label>Taste 😋 (Slide for Santa)</label>
+          <input type="range" min="1" max="10" value="5" id="taste" oninput="updateSanta()">
+          <div style="text-align:right; font-weight:bold" id="tasteVal">5</div>
+        </div>
 
-    <div class="slider-wrap">
-      <label>Christmas Spirit 🎄</label>
-      <input type="range" min="1" max="5" value="3" id="spirit" oninput="syncEmoji()">
-      <div class="row"><span id="spiritEmoji">🙂</span><span id="spiritScore">3/5</span></div>
-    </div>
+        <div class="slider-group">
+          <label>Presentation 📸</label>
+          <input type="range" min="1" max="10" value="5" id="pres" oninput="updateVal('pres')">
+          <div style="text-align:right; font-weight:bold" id="presVal">5</div>
+        </div>
 
-    <label>One Word Description (Optional)</label>
-    <input type="text" id="one_word" placeholder="e.g. Magical">
+        <div class="slider-group">
+          <div id="snowman-container"><div id="snowman">☃️</div></div>
+          <label>Xmas Spirit 🎄 (Build Snowman)</label>
+          <input type="range" min="1" max="10" value="5" id="spirit" oninput="updateSnowman()">
+          <div style="text-align:right; font-weight:bold" id="spiritVal">5</div>
+        </div>
 
-    <label>Your Name (Optional)</label>
-    <input type="text" id="judge" placeholder="Who are you?">
+        <input type="text" id="one_word" placeholder="One Word Description">
+        <input type="text" id="judge" placeholder="Your Name (Optional)">
+        <button type="submit" class="btn">Submit Vote 🎁</button>
+      </form>
+    </section>
 
-    <button type="submit" class="btn">Submit Rating 🎁</button>
-  </form>
-</section>
-
-<section class="card">
-  <h2>🏆 Live Leaderboard</h2>
-  <table class="table" id="lbTable">
-    <thead><tr><th>Rank</th><th>Baker</th><th>Votes</th><th>Total</th></tr></thead>
-    <tbody></tbody>
-  </table>
-  <p style="text-align:center; margin-top:10px;"><a href="/words">View One-Word Descriptions</a></p>
-</section>
+    <section class="card">
+      <h2>🏆 Leaderboard (Avg Score)</h2>
+      <table class="table" id="lbTable">
+        <thead><tr><th>Rank</th><th>Baker</th><th>Votes</th><th>Avg</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div style="text-align:center; margin-top:15px">
+        <a href="/words">See Word Cloud</a> | <a href="/admin">Admin Login</a>
+      </div>
+    </section>
+  </div>
 
 <script>
-const emojis = {1:'🥶', 2:'😐', 3:'🙂', 4:'😋', 5:'🤤'};
-const spiritEmojis = {1:'🧊', 2:'😐', 3:'🙂', 4:'🎄', 5:'🎅'};
+function updateVal(id) { document.getElementById(id+'Val').innerText = document.getElementById(id).value; }
 
-function syncEmoji(){
-  document.getElementById('tasteEmoji').innerText = emojis[document.getElementById('taste').value];
-  document.getElementById('presEmoji').innerText = emojis[document.getElementById('presentation').value];
-  document.getElementById('spiritEmoji').innerText = spiritEmojis[document.getElementById('spirit').value];
-  
-  ['taste','presentation','spirit'].forEach(id => {
-      document.getElementById(id+'Score').innerText = document.getElementById(id).value + "/5";
-  });
+function updateSanta() {
+  const val = document.getElementById('taste').value;
+  document.getElementById('tasteVal').innerText = val;
+  // Move Santa 0% to 90% across
+  const pct = (val - 1) * 10; 
+  document.getElementById('santa-container').style.left = pct + "%";
+}
+
+function updateSnowman() {
+  const val = document.getElementById('spirit').value;
+  document.getElementById('spiritVal').innerText = val;
+  // Grow Snowman
+  const size = 20 + (val * 4); // 24px to 60px
+  document.getElementById('snowman').style.fontSize = size + "px";
 }
 
 document.getElementById('rateForm').addEventListener('submit', async (e) => {
@@ -65,26 +85,24 @@ document.getElementById('rateForm').addEventListener('submit', async (e) => {
   const payload = {
     entrant_index: document.getElementById('entrant').value,
     taste: document.getElementById('taste').value,
-    presentation: document.getElementById('presentation').value,
+    presentation: document.getElementById('pres').value,
     spirit: document.getElementById('spirit').value,
     one_word: document.getElementById('one_word').value,
     judge: document.getElementById('judge').value
   };
   await fetch('/api/rate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-  alert("Vote Saved! 🎅");
-  refreshLB();
+  alert("Vote Cast! 🎄");
+  loadLB();
 });
 
-async function refreshLB(){
+async function loadLB(){
   const res = await fetch('/api/leaderboard');
   const data = await res.json();
   const tbody = document.querySelector('#lbTable tbody');
-  tbody.innerHTML = data.map((r, i) => `
-    <tr><td>#${i+1}</td><td>${r.name}</td><td>${r.votes}</td><td><strong>${r.avg_total}</strong></td></tr>
-  `).join('');
+  tbody.innerHTML = data.map((r, i) => `<tr><td>#${i+1}</td><td>${r.name}</td><td>${r.votes}</td><td><strong>${r.avg_total}</strong></td></tr>`).join('');
 }
-refreshLB();
-setInterval(refreshLB, 5000);
-syncEmoji();
+loadLB();
+setInterval(loadLB, 5000);
 </script>
-{% endblock %}
+</body>
+</html>
