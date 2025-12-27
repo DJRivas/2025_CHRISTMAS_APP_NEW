@@ -2,15 +2,12 @@
 <html><head><link rel="stylesheet" href="/static/styles.css"></head><body>
 <div class="wrap"><div class="card">
 <div style="display:flex;justify-content:space-between"><h2>Admin</h2><a href="/" class="btn" style="width:auto;background:#888">Exit</a></div>
-
 <h3>Edit Participants</h3>
-<p style="font-size:0.9rem; color:#666">Add names, remove names, or edit them (e.g., "Bryan - Cookies"). <strong>One per line.</strong></p>
-
+<p style="font-size:0.9rem; color:#666">One name per line.</p>
 <form action="/admin/update_names" method="post">
   <textarea name="names_block" rows="15" style="width:100%">{{ entrants_str }}</textarea>
   <button class="btn">Save List</button>
 </form>
-
 <hr style="margin-top:30px">
 <h3>Danger Zone</h3>
 <form action="/admin/reset" method="post" onsubmit="return confirm('Delete all votes?')">

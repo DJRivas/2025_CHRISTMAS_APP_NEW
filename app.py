@@ -1,8 +1,8 @@
 import os, uuid, sqlite3, json
 from flask import Flask, render_template, request, jsonify, g, make_response, redirect, url_for, session
 
-# We use a new table name to avoid conflicts with the old 1-5 constraint
-TABLE_NAME = "ratings_v2"
+# UNIQUE TABLE NAME TO ENSURE FRESH DB
+TABLE_NAME = "ratings_v7"
 DATABASE = os.environ.get("DATABASE_URL", "ratings.db")
 SECRET_KEY = os.environ.get("SECRET_KEY", "santa-secret-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Julian")
@@ -22,13 +22,11 @@ def load_entrants():
     return DEFAULT_ENTRANTS
 
 def save_entrants(names):
-    # Filter out empty lines
-    clean_names = [n.strip() for n in names if n.strip()]
+    clean = [n.strip() for n in names if n.strip()]
     try:
         with open(DATA_FILE, 'w') as f:
-            json.dump(clean_names, f)
-    except Exception as e:
-        print(f"Error saving entrants: {e}")
+            json.dump(clean, f)
+    except: pass
 
 def get_db():
     db = getattr(g, "_db", None)
@@ -41,7 +39,6 @@ def get_db():
 def init_db():
     with app.app_context():
         db = get_db()
-        # Create new table with 1-10 constraint
         db.execute(f"""
             CREATE TABLE IF NOT EXISTS {TABLE_NAME}(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,15 +78,17 @@ def api_rate():
         s = int(data.get("spirit"))
         judge = (data.get("judge") or "").strip()[:50]
         one_word = (data.get("one_word") or "").strip().split()[0][:20]
-        device_id = request.cookies.get("device_id")
         
-        # Validation
+        # Device ID Fallback
+        device_id = request.cookies.get("device_id")
+        if not device_id: device_id = data.get("fingerprint", str(uuid.uuid4()))
+
+        # Check Limits
         if not (1 <= t <= 10 and 1 <= p <= 10 and 1 <= s <= 10):
             return jsonify({"ok": False, "error": "Ratings must be 1-10"}), 400
-    except Exception as e: 
-        return jsonify({"ok": False, "error": "Bad data"}), 400
 
-    if not (0 <= idx < len(load_entrants())): return jsonify({"ok": False}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Bad Data: {str(e)}"}), 400
 
     try:
         db = get_db()
@@ -139,15 +138,17 @@ def api_leaderboard():
 
 @app.route("/api/words")
 def api_words():
-    entrants = load_entrants()
-    db = get_db()
-    rows = db.execute(f"SELECT entrant_index, LOWER(one_word) as w, COUNT(*) as c FROM {TABLE_NAME} WHERE one_word != '' GROUP BY entrant_index, LOWER(one_word) ORDER BY c DESC").fetchall()
-    out = {}
-    for r in rows:
-        idx = r["entrant_index"]
-        if idx < len(entrants):
-            out.setdefault(entrants[idx], []).append({"word": r["w"], "count": r["c"]})
-    return jsonify(out)
+    try:
+        entrants = load_entrants()
+        db = get_db()
+        rows = db.execute(f"SELECT entrant_index, LOWER(one_word) as w, COUNT(*) as c FROM {TABLE_NAME} WHERE one_word != '' GROUP BY entrant_index, LOWER(one_word) ORDER BY c DESC").fetchall()
+        out = {}
+        for r in rows:
+            idx = r["entrant_index"]
+            if idx < len(entrants):
+                out.setdefault(entrants[idx], []).append({"word": r["w"], "count": r["c"]})
+        return jsonify(out)
+    except: return jsonify({})
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
@@ -156,19 +157,17 @@ def admin():
             session["is_admin"] = True
             return redirect(url_for("admin"))
         return render_template("admin_login.html", error="Bad Password")
+    
     if not session.get("is_admin"): return render_template("admin_login.html")
     
-    # Pass entrants as a string for the textarea
     entrants_str = "\n".join(load_entrants())
     return render_template("admin_dashboard.html", entrants_str=entrants_str)
 
 @app.route("/admin/update_names", methods=["POST"])
 def update_names():
     if not session.get("is_admin"): return redirect(url_for("admin"))
-    # Split textarea by lines
-    raw_text = request.form.get("names_block", "")
-    new_names = raw_text.splitlines()
-    save_entrants(new_names)
+    raw = request.form.get("names_block", "")
+    save_entrants(raw.splitlines())
     return redirect(url_for("admin"))
 
 @app.route("/admin/reset", methods=["POST"])

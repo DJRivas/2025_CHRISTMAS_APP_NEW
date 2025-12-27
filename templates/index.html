@@ -37,17 +37,9 @@
             <input type="range" min="1" max="10" value="5" id="pres" oninput="updateAll('pres')">
         </div>
 
-        <div class="anim-box" id="snowman-scene" style="margin-top:30px">
-            <div id="snow-ground"></div>
-            <div id="snowman-wrap">
-                <div class="sb base" id="sb1"></div>
-                <div class="sb mid" id="sb2"></div>
-                <div class="sb head" id="sb3"></div>
-            </div>
-        </div>
-        <div class="slider-container">
-            <span class="slider-label" style="top:-35px">Xmas Spirit 🎄</span>
-            <span class="score-display" id="disp-spirit" style="top:-35px">5</span>
+        <div class="slider-container" style="margin-top:30px;">
+            <span class="slider-label">Xmas Spirit 🎄</span>
+            <span class="score-display" id="disp-spirit">5</span>
             <div class="track"><div class="track-fill" id="fill-spirit" style="width: 50%"></div></div>
             <div class="thumb-emoji" id="thumb-spirit">🙂</div>
             <input type="range" min="1" max="10" value="5" id="spirit" oninput="updateAll('spirit')">
@@ -85,14 +77,6 @@ function updateAll(id) {
     thumb.style.left = pct + '%';
     const emojiSet = (id === 'spirit') ? spiritEmojis : faceEmojis;
     thumb.innerText = emojiSet[val - 1];
-
-    if (id === 'spirit') {
-        const s1 = document.getElementById('sb1'), s2 = document.getElementById('sb2'), s3 = document.getElementById('sb3');
-        s1.classList.remove('visible'); s2.classList.remove('visible'); s3.classList.remove('visible');
-        if (val >= 1) s1.classList.add('visible');
-        if (val >= 4) s2.classList.add('visible');
-        if (val >= 7) s3.classList.add('visible');
-    }
 }
 
 updateAll('taste'); updateAll('pres'); updateAll('spirit');
@@ -103,13 +87,17 @@ document.getElementById('rateForm').addEventListener('submit', async (e) => {
     const oldText = btn.innerText;
     btn.innerText = "Saving..."; btn.disabled = true;
 
+    // Generate a fallback ID if cookie missing
+    const fp = 'anon-' + Math.random().toString(36).substr(2, 9);
+
     const payload = {
         entrant_index: document.getElementById('entrant').value,
         taste: document.getElementById('taste').value,
         presentation: document.getElementById('pres').value,
         spirit: document.getElementById('spirit').value,
         one_word: document.getElementById('one_word').value,
-        judge: document.getElementById('judge').value
+        judge: document.getElementById('judge').value,
+        fingerprint: fp
     };
 
     try {
