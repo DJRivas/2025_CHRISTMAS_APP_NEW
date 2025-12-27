@@ -6,13 +6,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "santa-secret-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Julian")
 DATA_FILE = os.environ.get("DATA_PATH", "bakers.json")
 
-# Default Entrants
 DEFAULT_ENTRANTS = ["Javier", "Lindsay", "Yesenia", "Bryan", "Daniella", "Rogelio", "Viviana", "Martha", "Bernie"]
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = SECRET_KEY
 
-# --- Persistence for Baker Names ---
 def load_entrants():
     if os.path.exists(DATA_FILE):
         try:
@@ -25,7 +23,6 @@ def save_entrants(names):
     with open(DATA_FILE, 'w') as f:
         json.dump(names, f)
 
-# --- Database ---
 def get_db():
     db = getattr(g, "_db", None)
     if db is None:
@@ -54,7 +51,6 @@ def init_db():
 with app.app_context():
     init_db()
 
-# --- Routes ---
 @app.route("/")
 def home():
     entrants = load_entrants()
@@ -109,11 +105,13 @@ def api_leaderboard():
     for r in rows:
         idx = r["entrant_index"]
         if idx < len(entrants):
-            avg_total = (r["t"] + r["p"] + r["s"]) / 3.0
             results.append({
                 "name": entrants[idx],
                 "votes": r["votes"],
-                "avg_total": round(avg_total, 2)
+                "avg_t": round(r["t"], 1),
+                "avg_p": round(r["p"], 1),
+                "avg_s": round(r["s"], 1),
+                "avg_total": round((r["t"] + r["p"] + r["s"]) / 3.0, 2)
             })
     
     results.sort(key=lambda x: x["avg_total"], reverse=True)
@@ -131,7 +129,6 @@ def api_words():
             out.setdefault(entrants[idx], []).append({"word": r["w"], "count": r["c"]})
     return jsonify(out)
 
-# --- Admin ---
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     if request.method == "POST":
@@ -139,18 +136,13 @@ def admin():
             session["is_admin"] = True
             return redirect(url_for("admin"))
         return render_template("admin_login.html", error="Incorrect Password")
-
-    if not session.get("is_admin"):
-        return render_template("admin_login.html")
-
-    entrants = load_entrants()
-    return render_template("admin_dashboard.html", entrants=entrants)
+    if not session.get("is_admin"): return render_template("admin_login.html")
+    return render_template("admin_dashboard.html", entrants=load_entrants())
 
 @app.route("/admin/update_names", methods=["POST"])
 def update_names():
     if not session.get("is_admin"): return redirect(url_for("admin"))
-    new_names = request.form.getlist("names")
-    save_entrants(new_names)
+    save_entrants(request.form.getlist("names"))
     return redirect(url_for("admin"))
 
 @app.route("/admin/reset", methods=["POST"])
