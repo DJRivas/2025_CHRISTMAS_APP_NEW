@@ -20,36 +20,42 @@ def load_entrants():
     return DEFAULT_ENTRANTS
 
 def save_entrants(names):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(names, f)
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(names, f)
+    except Exception as e:
+        print(f"Error saving entrants: {e}")
 
 def get_db():
     db = getattr(g, "_db", None)
     if db is None:
-        db = g._db = sqlite3.connect(DATABASE, check_same_thread=False)
+        db = g._db = sqlite3.connect(DATABASE, check_same_thread=False, timeout=10)
         db.row_factory = sqlite3.Row
+        # Enable WAL mode for better concurrency on some systems
+        db.execute('PRAGMA journal_mode=WAL;')
     return db
 
 def init_db():
-    db = get_db()
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS ratings(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            entrant_index INTEGER NOT NULL,
-            taste INTEGER NOT NULL,
-            presentation INTEGER NOT NULL,
-            spirit INTEGER NOT NULL,
-            judge TEXT,
-            device_id TEXT,
-            one_word TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (entrant_index, device_id)
-        )
-    """)
-    db.commit()
+    with app.app_context():
+        db = get_db()
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS ratings(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entrant_index INTEGER NOT NULL,
+                taste INTEGER NOT NULL,
+                presentation INTEGER NOT NULL,
+                spirit INTEGER NOT NULL,
+                judge TEXT,
+                device_id TEXT,
+                one_word TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (entrant_index, device_id)
+            )
+        """)
+        db.commit()
 
-with app.app_context():
-    init_db()
+# Initialize DB on startup
+init_db()
 
 @app.route("/")
 def home():
@@ -72,50 +78,62 @@ def api_rate():
         s = int(data.get("spirit"))
         judge = (data.get("judge") or "").strip()[:50]
         one_word = (data.get("one_word") or "").strip().split()[0][:20]
-    except: return jsonify({"ok": False}), 400
+        device_id = request.cookies.get("device_id")
+        if not device_id: raise Exception("No device ID")
+    except Exception as e: 
+        print(f"Invalid payload data: {e}")
+        return jsonify({"ok": False, "error": "Bad data"}), 400
 
     if not (0 <= idx < len(load_entrants())): return jsonify({"ok": False}), 400
 
-    db = get_db()
-    db.execute(
-        """INSERT INTO ratings (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(entrant_index, device_id) DO UPDATE SET
-            taste=excluded.taste, presentation=excluded.presentation, spirit=excluded.spirit,
-            judge=excluded.judge, one_word=excluded.one_word
-        """,
-        (idx, t, p, s, judge, request.cookies.get("device_id"), one_word)
-    )
-    db.commit()
-    return jsonify({"ok": True})
+    try:
+        db = get_db()
+        db.execute(
+            """INSERT INTO ratings (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(entrant_index, device_id) DO UPDATE SET
+                taste=excluded.taste, presentation=excluded.presentation, spirit=excluded.spirit,
+                judge=excluded.judge, one_word=excluded.one_word
+            """,
+            (idx, t, p, s, judge, device_id, one_word)
+        )
+        db.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        print(f"DATABASE ERROR during save: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/leaderboard")
 def api_leaderboard():
-    entrants = load_entrants()
-    db = get_db()
-    # Force float division by multiplying by 1.0
-    rows = db.execute("""
-        SELECT entrant_index, COUNT(*) as votes,
-               AVG(taste*1.0) as t, AVG(presentation*1.0) as p, AVG(spirit*1.0) as s
-        FROM ratings GROUP BY entrant_index
-    """).fetchall()
-    
-    results = []
-    for r in rows:
-        idx = r["entrant_index"]
-        if idx < len(entrants):
-            avg_total = (r["t"] + r["p"] + r["s"]) / 3.0
-            results.append({
-                "name": entrants[idx],
-                "votes": r["votes"],
-                "avg_t": round(r["t"], 1),
-                "avg_p": round(r["p"], 1),
-                "avg_s": round(r["s"], 1),
-                "avg_total": round(avg_total, 2)
-            })
-    
-    results.sort(key=lambda x: x["avg_total"], reverse=True)
-    return jsonify(results)
+    try:
+        entrants = load_entrants()
+        db = get_db()
+        # Force float division by multiplying by 1.0
+        rows = db.execute("""
+            SELECT entrant_index, COUNT(*) as votes,
+                   AVG(taste*1.0) as t, AVG(presentation*1.0) as p, AVG(spirit*1.0) as s
+            FROM ratings GROUP BY entrant_index
+        """).fetchall()
+        
+        results = []
+        for r in rows:
+            idx = r["entrant_index"]
+            if idx < len(entrants):
+                avg_total = (r["t"] + r["p"] + r["s"]) / 3.0
+                results.append({
+                    "name": entrants[idx],
+                    "votes": r["votes"],
+                    "avg_t": round(r["t"], 1),
+                    "avg_p": round(r["p"], 1),
+                    "avg_s": round(r["s"], 1),
+                    "avg_total": round(avg_total, 2)
+                })
+        
+        results.sort(key=lambda x: x["avg_total"], reverse=True)
+        return jsonify(results)
+    except Exception as e:
+        print(f"DB Error in leaderboard: {e}")
+        return jsonify([])
 
 @app.route("/api/words")
 def api_words():
@@ -154,4 +172,6 @@ def reset_game():
     return redirect(url_for("admin"))
 
 if __name__ == "__main__":
+    # Use WAL mode for local testing too
+    init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

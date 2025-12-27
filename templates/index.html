@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div><div class="snowflake">❅</div><div class="snowflake">❆</div>
+
   <div class="wrap">
     <h1>🎅 2025 Baking Comp 🍪</h1>
     
@@ -19,21 +21,21 @@
           {% for name in entrants %}<option value="{{ loop.index0 }}">{{ name }}</option>{% endfor %}
         </select>
 
-        <div class="anim-box active">
+        <div class="anim-box">
             <div class="stars"></div>
             <div id="santa-mover">
-                <svg viewBox="0 0 64 64"><path d="M12 40 Q20 50 30 40 T50 40 L55 35 L45 35 L40 20 L25 25 L20 35 Z M20 35 L10 35 L5 25" fill="white"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 254.44 90.33"><path d="M254.27 49.11c-1.14-2.52-3.62-4.19-6.38-4.31-2.76-.1-5.32 1.33-6.69 3.74l-5.72 9.91c-3.24 5.76-.6 12.65 5.34 15.35l3.9 1.77c-2 4-2.45 8.66-.91 12.94 1.94 5.45 6.73 9.43 12.41 10.31 1.2.19 2.41.28 3.61.28 6.12 0 11.87-2.8 15.42-7.5 1.96-2.6 3.06-5.74 3.18-9.02l.05-1.51c.22-6.54-2.12-12.9-6.42-17.67l-3.7-4.11-14.09-10.18zM217.55 38.18l-5.72 9.91c-3.24 5.76-.6 12.65 5.34 15.35l3.9 1.77c-2 4-2.45 8.66-.91 12.94 1.94 5.45 6.73 9.43 12.41 10.31 1.2.19 2.41.28 3.61.28 6.12 0 11.87-2.8 15.42-7.5 1.96-2.6 3.06-5.74 3.18-9.02l.05-1.51c.22-6.54-2.12-12.9-6.42-17.67l-3.7-4.11-14.09-10.18c-1.14-2.52-3.62-4.19-6.38-4.31-2.76-.1-5.32 1.33-6.69 3.74zM181.47 26.39l-5.72 9.91c-3.24 5.76-.6 12.65 5.34 15.35l3.9 1.77c-2 4-2.45 8.66-.91 12.94 1.94 5.45 6.73 9.43 12.41 10.31 1.2.19 2.41.28 3.61.28 6.12 0 11.87-2.8 15.42-7.5 1.96-2.6 3.06-5.74 3.18-9.02l.05-1.51c.22-6.54-2.12-12.9-6.42-17.67l-3.7-4.11-14.09-10.18c-1.14-2.52-3.62-4.19-6.38-4.31-2.76-.1-5.32 1.33-6.69 3.74zM146.37 15.92l-5.72 9.91c-3.24 5.76-.6 12.65 5.34 15.35l3.9 1.77c-2 4-2.45 8.66-.91 12.94 1.94 5.45 6.73 9.43 12.41 10.31 1.2.19 2.41.28 3.61.28 6.12 0 11.87-2.8 15.42-7.5 1.96-2.6 3.06-5.74 3.18-9.02l.05-1.51c.22-6.54-2.12-12.9-6.42-17.67l-3.7-4.11-14.09-10.18c-1.14-2.52-3.62-4.19-6.38-4.31-2.76-.1-5.32 1.33-6.69 3.74zM106.92 26.68l-5.25 3.64c-2.6 1.81-4.57 4.48-5.57 7.52-1.27 3.83-.3 8.03 2.58 11.11l4.21 4.52c.66.71 1.4 1.34 2.19 1.9l17.42 12.26c1.56 1.1 3.41 1.67 5.3 1.67 2.5 0 4.92-.97 6.72-2.74 3.27-3.21 3.93-8.33 1.53-12.23L124.22 36c-3.1-5.07-8.35-8.32-14.25-8.97-.99-.1-1.99-.15-3.05-.35z"/><path d="M75.66 46.37c-6.88 2.25-14.24 1.6-20.65-.74L35.9 38.66l-4.76 8.26c-2.22 3.86-6.33 6.22-10.78 6.22-1.57 0-3.15-.3-4.68-1.02l-10.03-4.74-2.51 4.35c-2.43 4.21-6.9 6.78-11.75 6.78-1.71 0-3.43-.32-5.11-1.09l-1.67-.76 2.15 7.51c1.37 4.79 5.1 8.57 9.92 10.06 2.08.64 4.22.97 6.35.97 4.71 0 9.27-1.62 12.98-4.58L51.65 56.03c4.5-3.59 10.14-5.57 15.91-5.57 1.76 0 3.53.18 5.27.55l10.78 2.27c4.03.85 8.19-.59 10.91-3.59 2.73-3.01 3.62-7.27 2.34-11.16l-4.46-13.5c-.6-1.82-1.73-3.43-3.24-4.62l-11.68-9.18c-2.41-1.89-5.52-2.56-8.5-1.85-2.98.71-5.48 2.66-6.84 5.33l-6.48 12.7z"/></svg>
             </div>
         </div>
         <div class="slider-container">
-            <span class="slider-label">Taste 😋</span>
+            <span class="anim-label">Taste 😋</span>
             <span class="score-display" id="disp-taste">5</span>
             <div class="track"><div class="track-fill" id="fill-taste" style="width: 50%"></div></div>
             <div class="thumb-emoji" id="thumb-taste">🙂</div>
             <input type="range" min="1" max="10" value="5" id="taste" oninput="updateAll('taste')">
         </div>
 
-        <div class="slider-container" style="margin-top:20px;">
+        <div class="slider-container" style="margin-top:30px;">
             <span class="slider-label">Presentation 📸</span>
             <span class="score-display" id="disp-pres">5</span>
             <div class="track"><div class="track-fill" id="fill-pres" style="width: 50%"></div></div>
@@ -41,7 +43,7 @@
             <input type="range" min="1" max="10" value="5" id="pres" oninput="updateAll('pres')">
         </div>
 
-        <div class="anim-box active" id="snowman-scene" style="margin-top:30px">
+        <div class="anim-box" id="snowman-scene" style="margin-top:30px">
             <div id="snow-ground"></div>
             <div id="snowman-wrap">
                 <div class="sb base" id="sb1"></div>
@@ -50,7 +52,7 @@
             </div>
         </div>
         <div class="slider-container">
-            <span class="slider-label">Xmas Spirit 🎄</span>
+            <span class="anim-label">Xmas Spirit 🎄</span>
             <span class="score-display" id="disp-spirit">5</span>
             <div class="track"><div class="track-fill" id="fill-spirit" style="width: 50%"></div></div>
             <div class="thumb-emoji" id="thumb-spirit">🙂</div>
@@ -76,59 +78,44 @@
   </div>
 
 <script>
-// Logic to map 1-10 to Emojis
 const faceEmojis = ['🥶','🥶','😐','😐','🙂','🙂','😋','😋','🤤','🤤'];
 const spiritEmojis = ['🧊','🧊','😐','😐','🙂','🙂','🎄','🎄','🎅','🎅'];
 
 function updateAll(id) {
     const val = document.getElementById(id).value;
-    const pct = (val - 1) * 11.1; // 0 to 100 scale approximately
+    const pct = (val - 1) * 11.1;
 
-    // 1. Update Number Display
     document.getElementById('disp-' + id).innerText = val;
-
-    // 2. Update Track Fill
     document.getElementById('fill-' + id).style.width = pct + '%';
-
-    // 3. Move Emoji Thumb
     const thumb = document.getElementById('thumb-' + id);
     thumb.style.left = pct + '%';
-
-    // 4. Change Emoji Face
     const emojiSet = (id === 'spirit') ? spiritEmojis : faceEmojis;
     thumb.innerText = emojiSet[val - 1];
 
-    // 5. Special Animations
     if (id === 'taste') {
-        // Move Santa across the sky (10% to 90%)
-        const santaPos = 5 + (val * 8.5); 
-        document.getElementById('santa-mover').style.left = santaPos + '%';
+        // Move Santa across container width minus svg width
+        const containerWidth = document.querySelector('.anim-box').offsetWidth;
+        const svgWidth = 140; // defined in css
+        const maxLeft = containerWidth - svgWidth;
+        const santaPos = (val - 1) / 9 * maxLeft;
+        document.getElementById('santa-mover').style.left = santaPos + 'px';
     }
     if (id === 'spirit') {
-        // Build Snowman logic
-        const s1 = document.getElementById('sb1');
-        const s2 = document.getElementById('sb2');
-        const s3 = document.getElementById('sb3');
-        
-        // Reset classes
+        const s1 = document.getElementById('sb1'), s2 = document.getElementById('sb2'), s3 = document.getElementById('sb3');
         s1.classList.remove('visible'); s2.classList.remove('visible'); s3.classList.remove('visible');
-        
         if (val >= 1) s1.classList.add('visible');
         if (val >= 4) s2.classList.add('visible');
         if (val >= 7) s3.classList.add('visible');
     }
 }
 
-// Initial Setup
 updateAll('taste'); updateAll('pres'); updateAll('spirit');
 
-// Submit Logic
 document.getElementById('rateForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.querySelector('.btn');
     const oldText = btn.innerText;
-    btn.innerText = "Saving...";
-    btn.disabled = true;
+    btn.innerText = "Saving..."; btn.disabled = true;
 
     const payload = {
         entrant_index: document.getElementById('entrant').value,
@@ -141,52 +128,35 @@ document.getElementById('rateForm').addEventListener('submit', async (e) => {
 
     try {
         const res = await fetch('/api/rate', {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify(payload)
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
         });
-        if(res.ok) {
+        const data = await res.json();
+        if(res.ok && data.ok) {
             alert("Vote Cast! 🎄");
-            // IMMEDIATE REFRESH
             await loadLB(); 
         } else {
-            alert("Error saving vote.");
+            alert("Error saving vote: " + (data.error || "Unknown error"));
         }
-    } catch(err) {
-        alert("Connection error.");
-    }
+    } catch(err) { alert("Connection error. Try again."); }
 
-    btn.innerText = oldText;
-    btn.disabled = false;
+    btn.innerText = oldText; btn.disabled = false;
 });
 
-// Leaderboard Logic
 async function loadLB(){
     try {
         const res = await fetch('/api/leaderboard');
         const data = await res.json();
         const tbody = document.querySelector('#lbTable tbody');
-        
-        if(data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No votes yet!</td></tr>';
-            return;
-        }
-
+        if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="6">No votes yet!</td></tr>'; return; }
         tbody.innerHTML = data.map((r, i) => `
-            <tr>
-                <td>${i+1}</td>
-                <td style="text-align:left">${r.name}<br><small style="color:#999">${r.votes} votes</small></td>
-                <td>${r.avg_t}</td>
-                <td>${r.avg_p}</td>
-                <td>${r.avg_s}</td>
-                <td><strong>${r.avg_total}</strong></td>
-            </tr>
+            <tr><td>${i+1}</td><td style="text-align:left">${r.name}<br><small style="color:#999">${r.votes} votes</small></td>
+            <td>${r.avg_t}</td><td>${r.avg_p}</td><td>${r.avg_s}</td><td><strong>${r.avg_total}</strong></td></tr>
         `).join('');
     } catch(e) { console.log("LB Error", e); }
 }
-
-loadLB();
-setInterval(loadLB, 5000); // Poll every 5s just in case
+loadLB(); setInterval(loadLB, 5000);
+// Recalculate Santa position on window resize
+window.addEventListener('resize', () => updateAll('taste'));
 </script>
 </body>
 </html>
