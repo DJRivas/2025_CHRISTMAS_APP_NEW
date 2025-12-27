@@ -1,17 +1,6 @@
 <!doctype html>
-<html>
-<head><link rel="stylesheet" href="/static/styles.css"></head>
-<body>
-<div class="wrap">
-  <div class="card" style="max-width:400px; margin:50px auto; text-align:center;">
-    <h2>🔐 Admin Access</h2>
-    {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
-    <form method="post">
-      <input type="password" name="password" placeholder="••••••••" required style="text-align:center; font-size:1.2rem;">
-      <button class="btn">Login</button>
-    </form>
-    <br><a href="/">Back to App</a>
-  </div>
-</div>
-</body>
-</html>
+<html><head><link rel="stylesheet" href="/static/styles.css"></head><body>
+<div class="wrap"><div class="card" style="text-align:center">
+<h2>🔐 Admin</h2>{% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+<form method="post"><input type="password" name="password" placeholder="Password"><button class="btn">Login</button></form>
+<br><a href="/">Back</a></div></div></body></html>

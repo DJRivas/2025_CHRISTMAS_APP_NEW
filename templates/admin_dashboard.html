@@ -1,30 +1,9 @@
 <!doctype html>
-<html>
-<head><link rel="stylesheet" href="/static/styles.css"></head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h2>⚙️ Admin Dashboard</h2>
-      <a href="/" class="btn" style="width:auto; background:#888;">Back to App</a>
-    </div>
-    
-    <h3>1. Edit Participants</h3>
-    <p style="font-size:0.9rem; color:#666">Update names or add dessert info (e.g., "Bryan - Cookies")</p>
-    <form action="/admin/update_names" method="post">
-      {% for name in entrants %}
-      <input type="text" name="names" value="{{ name }}">
-      {% endfor %}
-      <button class="btn">Save Changes</button>
-    </form>
-
-    <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-
-    <h3>2. Danger Zone</h3>
-    <form action="/admin/reset" method="post" onsubmit="return confirm('Are you sure? This deletes ALL votes forever.')">
-      <button class="btn btn-red">⚠️ Reset Game (Clear All Votes)</button>
-    </form>
-  </div>
-</div>
-</body>
-</html>
+<html><head><link rel="stylesheet" href="/static/styles.css"></head><body>
+<div class="wrap"><div class="card">
+<div style="display:flex;justify-content:space-between"><h2>Admin</h2><a href="/" class="btn" style="width:auto;background:#888">Exit</a></div>
+<h3>Edit Names</h3><form action="/admin/update_names" method="post">
+{% for name in entrants %}<input type="text" name="names" value="{{ name }}">{% endfor %}
+<button class="btn">Save</button></form>
+<hr><h3>Reset</h3><form action="/admin/reset" method="post" onsubmit="return confirm('Delete all votes?')">
+<button class="btn btn-red">Reset Game</button></form></div></div></body></html>

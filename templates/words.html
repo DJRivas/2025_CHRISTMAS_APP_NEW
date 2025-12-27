@@ -1,23 +1,8 @@
 <!doctype html>
-<html>
-<head><link rel="stylesheet" href="/static/styles.css"></head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <h2>☁️ Word Cloud</h2>
-    <div id="container"></div>
-    <br><a href="/" class="btn">Back</a>
-  </div>
-</div>
+<html><head><link rel="stylesheet" href="/static/styles.css"></head><body>
+<div class="wrap"><div class="card"><h2>☁️ Word Cloud</h2><div id="container"></div><br><a href="/" class="btn">Back</a></div></div>
 <script>
-async function load(){
-  const res = await fetch('/api/words');
-  const data = await res.json();
-  document.getElementById('container').innerHTML = Object.keys(data).map(n => 
-    `<div><strong>${n}</strong>: ` + data[n].map(w => `<span style="background:#ddd;padding:2px 6px;border-radius:10px;margin:2px;font-size:0.8rem">${w.word} (${w.count})</span>`).join('') + `</div><br>`
-  ).join('');
-}
-load();
-</script>
-</body>
-</html>
+fetch('/api/words').then(r=>r.json()).then(d=>{
+document.getElementById('container').innerHTML = Object.keys(d).map(n => `<div><strong>${n}</strong>: `+d[n].map(w=>`<span style="background:#eee;padding:2px 5px;margin:2px;border-radius:5px">${w.word} (${w.count})</span>`).join('')+`</div><br>`).join('')
+})
+</script></body></html>
