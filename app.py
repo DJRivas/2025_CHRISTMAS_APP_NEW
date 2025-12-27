@@ -1,6 +1,8 @@
-import os, uuid, sqlite3, json, time
+import os, uuid, sqlite3, json
 from flask import Flask, render_template, request, jsonify, g, make_response, redirect, url_for, session
 
+# We use a new table name to avoid conflicts with the old 1-5 constraint
+TABLE_NAME = "ratings_v2"
 DATABASE = os.environ.get("DATABASE_URL", "ratings.db")
 SECRET_KEY = os.environ.get("SECRET_KEY", "santa-secret-key")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Julian")
@@ -20,9 +22,11 @@ def load_entrants():
     return DEFAULT_ENTRANTS
 
 def save_entrants(names):
+    # Filter out empty lines
+    clean_names = [n.strip() for n in names if n.strip()]
     try:
         with open(DATA_FILE, 'w') as f:
-            json.dump(names, f)
+            json.dump(clean_names, f)
     except Exception as e:
         print(f"Error saving entrants: {e}")
 
@@ -31,20 +35,20 @@ def get_db():
     if db is None:
         db = g._db = sqlite3.connect(DATABASE, check_same_thread=False, timeout=10)
         db.row_factory = sqlite3.Row
-        # Enable WAL mode for better concurrency on some systems
         db.execute('PRAGMA journal_mode=WAL;')
     return db
 
 def init_db():
     with app.app_context():
         db = get_db()
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS ratings(
+        # Create new table with 1-10 constraint
+        db.execute(f"""
+            CREATE TABLE IF NOT EXISTS {TABLE_NAME}(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 entrant_index INTEGER NOT NULL,
-                taste INTEGER NOT NULL,
-                presentation INTEGER NOT NULL,
-                spirit INTEGER NOT NULL,
+                taste INTEGER NOT NULL CHECK(taste BETWEEN 1 AND 10),
+                presentation INTEGER NOT NULL CHECK(presentation BETWEEN 1 AND 10),
+                spirit INTEGER NOT NULL CHECK(spirit BETWEEN 1 AND 10),
                 judge TEXT,
                 device_id TEXT,
                 one_word TEXT,
@@ -54,7 +58,6 @@ def init_db():
         """)
         db.commit()
 
-# Initialize DB on startup
 init_db()
 
 @app.route("/")
@@ -79,9 +82,11 @@ def api_rate():
         judge = (data.get("judge") or "").strip()[:50]
         one_word = (data.get("one_word") or "").strip().split()[0][:20]
         device_id = request.cookies.get("device_id")
-        if not device_id: raise Exception("No device ID")
+        
+        # Validation
+        if not (1 <= t <= 10 and 1 <= p <= 10 and 1 <= s <= 10):
+            return jsonify({"ok": False, "error": "Ratings must be 1-10"}), 400
     except Exception as e: 
-        print(f"Invalid payload data: {e}")
         return jsonify({"ok": False, "error": "Bad data"}), 400
 
     if not (0 <= idx < len(load_entrants())): return jsonify({"ok": False}), 400
@@ -89,7 +94,7 @@ def api_rate():
     try:
         db = get_db()
         db.execute(
-            """INSERT INTO ratings (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
+            f"""INSERT INTO {TABLE_NAME} (entrant_index, taste, presentation, spirit, judge, device_id, one_word)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entrant_index, device_id) DO UPDATE SET
                 taste=excluded.taste, presentation=excluded.presentation, spirit=excluded.spirit,
@@ -100,7 +105,7 @@ def api_rate():
         db.commit()
         return jsonify({"ok": True})
     except Exception as e:
-        print(f"DATABASE ERROR during save: {e}")
+        print(f"DB Error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/leaderboard")
@@ -108,11 +113,10 @@ def api_leaderboard():
     try:
         entrants = load_entrants()
         db = get_db()
-        # Force float division by multiplying by 1.0
-        rows = db.execute("""
+        rows = db.execute(f"""
             SELECT entrant_index, COUNT(*) as votes,
                    AVG(taste*1.0) as t, AVG(presentation*1.0) as p, AVG(spirit*1.0) as s
-            FROM ratings GROUP BY entrant_index
+            FROM {TABLE_NAME} GROUP BY entrant_index
         """).fetchall()
         
         results = []
@@ -131,15 +135,13 @@ def api_leaderboard():
         
         results.sort(key=lambda x: x["avg_total"], reverse=True)
         return jsonify(results)
-    except Exception as e:
-        print(f"DB Error in leaderboard: {e}")
-        return jsonify([])
+    except: return jsonify([])
 
 @app.route("/api/words")
 def api_words():
     entrants = load_entrants()
     db = get_db()
-    rows = db.execute("SELECT entrant_index, LOWER(one_word) as w, COUNT(*) as c FROM ratings WHERE one_word != '' GROUP BY entrant_index, LOWER(one_word) ORDER BY c DESC").fetchall()
+    rows = db.execute(f"SELECT entrant_index, LOWER(one_word) as w, COUNT(*) as c FROM {TABLE_NAME} WHERE one_word != '' GROUP BY entrant_index, LOWER(one_word) ORDER BY c DESC").fetchall()
     out = {}
     for r in rows:
         idx = r["entrant_index"]
@@ -155,23 +157,27 @@ def admin():
             return redirect(url_for("admin"))
         return render_template("admin_login.html", error="Bad Password")
     if not session.get("is_admin"): return render_template("admin_login.html")
-    return render_template("admin_dashboard.html", entrants=load_entrants())
+    
+    # Pass entrants as a string for the textarea
+    entrants_str = "\n".join(load_entrants())
+    return render_template("admin_dashboard.html", entrants_str=entrants_str)
 
 @app.route("/admin/update_names", methods=["POST"])
 def update_names():
     if not session.get("is_admin"): return redirect(url_for("admin"))
-    save_entrants(request.form.getlist("names"))
+    # Split textarea by lines
+    raw_text = request.form.get("names_block", "")
+    new_names = raw_text.splitlines()
+    save_entrants(new_names)
     return redirect(url_for("admin"))
 
 @app.route("/admin/reset", methods=["POST"])
 def reset_game():
     if not session.get("is_admin"): return redirect(url_for("admin"))
     db = get_db()
-    db.execute("DELETE FROM ratings")
+    db.execute(f"DELETE FROM {TABLE_NAME}")
     db.commit()
     return redirect(url_for("admin"))
 
 if __name__ == "__main__":
-    # Use WAL mode for local testing too
-    init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
