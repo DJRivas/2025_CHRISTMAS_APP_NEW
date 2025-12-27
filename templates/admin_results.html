@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>📝 Full Results</h2>
+  <table class="table">
+    <thead><tr><th>Baker</th><th>Taste</th><th>Pres</th><th>Spirit</th><th>Total</th><th>Word</th><th>Judge</th></tr></thead>
+    <tbody>
+      {% for r in detailed %}
+      <tr>
+        <td>{{ r.entrant }}</td><td>{{ r.taste }}</td><td>{{ r.presentation }}</td><td>{{ r.spirit }}</td>
+        <td><strong>{{ r.total }}</strong></td><td>{{ r.one_word }}</td><td>{{ r.judge }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="topbar">
+    <h1>🎄 2025 Holiday Baking 🍪</h1>
+  </div>
+  <div class="wrap">
+    {% block content %}{% endblock %}
+  </div>
+  <footer style="text-align:center; font-size:0.8rem; color:#888; margin-top:20px;">
+    <a href="/admin" style="color:#aaa; text-decoration:none;">Admin Access</a>
+  </footer>
+</body>
+</html>

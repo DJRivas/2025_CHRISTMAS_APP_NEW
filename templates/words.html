@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>💬 What People Are Saying</h2>
+  <div id="wordsContainer"></div>
+  <br>
+  <button onclick="window.location.href='/'" class="btn" style="background:#888;">Back to Voting</button>
+</section>
+<script>
+async function loadWords(){
+  const res = await fetch('/api/words');
+  const data = await res.json();
+  const div = document.getElementById('wordsContainer');
+  div.innerHTML = Object.keys(data).map(name => `
+    <div style="margin-bottom:15px;">
+      <strong>${name}</strong><br>
+      ${data[name].map(w => `<span class="chip">${w.word} <b>${w.count}</b></span>`).join(' ')}
+    </div>
+  `).join('');
+}
+loadWords();
+</script>
+{% endblock %}
